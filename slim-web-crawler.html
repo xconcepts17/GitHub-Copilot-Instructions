@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Slim Docs to Markdown</title>
+</head>
+
+<body>
+  <h2>Slim Framework Docs to Markdown</h2>
+  <button onclick="startScraping()">Download Markdown</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.min.js"></script>
+
+  <script>
+    const urls = [
+      "https://www.slimframework.com/docs/v4/concepts/life-cycle.html",
+      "https://www.slimframework.com/docs/v4/concepts/value-objects.html",
+      "https://www.slimframework.com/docs/v4/concepts/middleware.html",
+      "https://www.slimframework.com/docs/v4/concepts/di.html",
+      "https://www.slimframework.com/docs/v4/objects/application.html",
+      "https://www.slimframework.com/docs/v4/objects/request.html",
+      "https://www.slimframework.com/docs/v4/objects/response.html",
+      "https://www.slimframework.com/docs/v4/objects/routing.html",
+      "https://www.slimframework.com/docs/v4/middleware/routing.html",
+      "https://www.slimframework.com/docs/v4/middleware/error-handling.html",
+      "https://www.slimframework.com/docs/v4/middleware/method-overriding.html",
+      "https://www.slimframework.com/docs/v4/middleware/output-buffering.html",
+      "https://www.slimframework.com/docs/v4/middleware/body-parsing.html",
+      "https://www.slimframework.com/docs/v4/middleware/content-length.html",
+      "https://www.slimframework.com/docs/v4/cookbook/route-patterns.html",
+      "https://www.slimframework.com/docs/v4/cookbook/retrieving-current-route.html",
+      "https://www.slimframework.com/docs/v4/cookbook/enable-cors.html",
+      "https://www.slimframework.com/docs/v4/cookbook/uploading-files.html",
+      "https://www.slimframework.com/docs/v4/features/twig-view.html"
+    ];
+
+    async function fetchAndConvert(url, turndownService) {
+      try {
+        // const proxy = "https://corsproxy.io/?" + encodeURIComponent(url);
+        const response = await fetch(url);
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const content = doc.querySelector(".docs-content");
+
+        if (content) {
+          const title = doc.title || url;
+          const markdown = `\n\n# ${title}\n\n` + turndownService.turndown(content.innerHTML);
+          return markdown;
+        } else {
+          console.warn(`No .docs-content found in ${url}`);
+          return `\n\n# Missing Content for ${url}\n\n`;
+        }
+      } catch (e) {
+        console.error(`Error fetching ${url}`, e);
+        return `\n\n# Error fetching ${url}\n\n`;
+      }
+    }
+
+    async function startScraping() {
+      const turndownService = new TurndownService();
+      let fullMarkdown = "";
+
+      for (let url of urls) {
+        const md = await fetchAndConvert(url, turndownService);
+        fullMarkdown += md;
+      }
+
+      const blob = new Blob([fullMarkdown], { type: "text/markdown" });
+      const urlBlob = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = urlBlob;
+      a.download = "SlimFrameworkDocs.md";
+      a.click();
+
+      URL.revokeObjectURL(urlBlob);
+    }
+  </script>
+</body>
+
+</html>
